@@ -9,16 +9,18 @@ N2 = 128
 fs = 10**9
 ##fft equvalent 8192
 
-#f1 = 243835449.21875#*10**6 #20.5*10**6
-f1 = 50*10**6
-f2 = 330*10**6
-f3 = 330*10**6
+f1 = fs/16*0.6
+#f1 = 70*10**6
+f2 = 230*10**6
+f3 = 340*10**6
 f4 = 480*10**6
+
+
 
 sig_len = 2**15
 t = np.arange(sig_len)*1.0/fs
 
-sig = 1*np.sin(2*np.pi*f1*t)#+1./4*np.sin(2*np.pi*f2*t)#+1./16*np.sin(2*np.pi*f3*t)+1./128*np.sin(2*np.pi*f4*t)
+sig = 1*np.sin(2*np.pi*f1*t)+1./4*np.sin(2*np.pi*f2*t)+1./16*np.sin(2*np.pi*f3*t)+1./128*np.sin(2*np.pi*f4*t)
 
 
 #sig = signal.hilbert(sig)
@@ -34,7 +36,7 @@ plt.title('signal spectrum')
 
 #compute fir values
 
-band = [0, 1.*fs/N1/2.5]
+band = [0, 1.*fs/N1/2]
 trans_width = 1.*fs/(N1*4*2)
 n_taps = 512
 edges = [band[0], band[1], band[1]+trans_width, 0.5*fs]
@@ -75,15 +77,19 @@ data_out = ifft(data_pfb, axis=0)
 
 
 spect_bands = 20*np.log10(fft(data_out[:,0:1024], axis=1))
+spect_bands_aux = spect_bands.copy()
+spect_bands[1:,0:512] = np.flip(spect_bands_aux[1:,:512], axis=1)
+spect_bands[1:,512:] = spect_bands_aux[1:,512:][:,::-1]
+
+
 
 
 df = fs/N1/10.**6
-freq = []
 band = np.zeros([16, 1024])
 
 
 def plot_band(ind):
-    freq = np.linspace(df*ind, df*(ind+1), 1024, endpoint=False)
+    freq = np.linspace(df*(ind-0.5), df*(ind+.5), 1024, endpoint=False)
     if(ind%2==0):
         plt.plot(freq, spect_bands[ind,:])
     else:
@@ -92,8 +98,17 @@ def plot_band(ind):
 
 
 plt.figure()
-for i in range(8):
+for i in range(9):
     plot_band(i)
  
+##Las bandas estan overlappeadas... k=0 va de 0, fs/(N1*2), 
+##k1 = va de 0, fs/N1 y asi va avanzando
+## para hacerlo facil toma bw=fs/N
+## banda1 : (0, bw/2)
+## banda2 : (0, bw)
+## banda3 : (bw:2bw)  ...etc..
 
+## a todo esto todas las bandas estan invertidas al paraecer
+## eso es por usar la fft en vez de la ifft
 
+##parece q esto tmb esta mal...
